@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Plataforma Antigravity - Telemetría IoT</title>
+    
+    <!-- Fuentes y Estilos -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    
+    <!-- Leaflet CSS (Mapa) -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    
+    <style>
+        body { 
+            font-family: 'Inter', sans-serif; 
+            margin: 0; 
+            padding: 0; 
+            background-color: #0f172a; 
+            color: #f8fafc;
+        }
+        #header { 
+            background: linear-gradient(90deg, #1e293b 0%, #0f172a 100%); 
+            padding: 20px; 
+            text-align: center; 
+            border-bottom: 1px solid #334155;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        h2 { margin: 0; font-weight: 800; letter-spacing: 1px; color: #38bdf8; }
+        #dashboard { 
+            display: flex; 
+            flex-wrap: wrap;
+            justify-content: center; 
+            gap: 15px;
+            background: rgba(30, 41, 59, 0.8); 
+            backdrop-filter: blur(10px);
+            padding: 15px 20px; 
+            font-size: 15px; 
+            border-bottom: 1px solid #334155;
+            position: relative;
+            z-index: 1000;
+        }
+        .stat-card {
+            background: #1e293b;
+            padding: 12px 24px;
+            border-radius: 10px;
+            border: 1px solid #334155;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+        .stat-card:hover {
+            transform: translateY(-2px);
+            border-color: #38bdf8;
+            box-shadow: 0 4px 12px rgba(56, 189, 248, 0.15);
+        }
+        .icon { font-size: 1.3rem; }
+        .value { font-weight: 600; color: #e2e8f0; }
+        #mapa-container { height: calc(100vh - 145px); width: 100%; z-index: 1; }
+        .badge { 
+            background-color: #10b981; 
+            padding: 4px 10px; 
+            border-radius: 6px; 
+            font-weight: bold; 
+            color: white; 
+            box-shadow: 0 2px 4px rgba(16, 185, 129, 0.2);
+        }
+        .conexion-status {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+            font-weight: 600;
+        }
+        .punto-rojo { height: 10px; width: 10px; background-color: #ef4444; border-radius: 50%; display: inline-block; }
+        .punto-verde { height: 10px; width: 10px; background-color: #10b981; border-radius: 50%; display: inline-block; box-shadow: 0 0 8px #10b981;}
+    </style>
+</head>
+<body>
+    <div id="header">
+        <h2>🛰️ ANTIGRAVITY LORA TRACKER</h2>
+        <div class="conexion-status">
+            <span id="status-dot" class="punto-rojo"></span>
+            <span id="status-text">Desconectado</span>
+        </div>
+    </div>
+    
+    <div id="dashboard">
+        <div class="stat-card">
+            <span class="icon">📍</span>
+            <span>Lat: <span class="value" id="val-lat">--</span> | Lng: <span class="value" id="val-lng">--</span></span>
+        </div>
+        <div class="stat-card">
+            <span class="icon">🛰️</span>
+            <span>Satélites: <span class="badge" id="val-sats">--</span></span>
+        </div>
+        <div class="stat-card">
+            <span class="icon">🔋</span>
+            <span>Batería: <span class="value" style="color: #34d399;" id="val-bat">--%</span></span>
+        </div>
+        <div class="stat-card">
+            <span class="icon">🕒</span>
+            <span>Última act: <span class="value" id="val-hora">--:--:--</span></span>
+        </div>
+    </div>
+    
+    <div id="mapa-container"></div>
+
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    
+    <!-- Firebase SDK Compat (para usar en HTML crudo fácilmente sin empaquetadores) -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
+
+    <script>
+        // --- 1. CONFIGURACIÓN DEL MAPA (LEAFLET) ---
+        // Coordenadas iniciales por defecto (Talca, Chile)
+        let latInicial = -35.426400;
+        let lngInicial = -71.655400;
+
+        const mapa = L.map('mapa-container').setView([latInicial, lngInicial], 17);
+
+        // Capa de Esri World Imagery (Mapa Satelital Real)
+        L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+            attribution: 'Tiles &copy; Esri'
+        }).addTo(mapa);
+
+        // Marcador
+        const marcador = L.marker([latInicial, lngInicial]).addTo(mapa);
+        marcador.bindPopup("<b>Móvil GPS</b>").openPopup();
+
+        // --- 2. CONFIGURACIÓN DE FIREBASE ---
+        // TODO: REEMPLAZAR CON TU CONFIGURACIÓN DE FIREBASE AL CREAR EL PROYECTO
+        const firebaseConfig = {
+            apiKey: "AIzaSyCFSI06EZP_Cb-FJIh-Z6NtG-qdGah_aPw",
+            authDomain: "gpsua-a8e4a.firebaseapp.com",
+            databaseURL: "https://gpsua-a8e4a-default-rtdb.firebaseio.com",
+            projectId: "gpsua-a8e4a",
+            storageBucket: "gpsua-a8e4a.firebasestorage.app",
+            messagingSenderId: "326653039016",
+            appId: "1:326653039016:web:dd889bafd686d1a0d10d9d"
+        };
+
+        try {
+            // Inicializar Firebase
+            firebase.initializeApp(firebaseConfig);
+            const db = firebase.database();
+            
+            // Referencia a la ruta donde se guardarán los datos (ej: "dispositivos/lora_1")
+            const telemetriaRef = db.ref('telemetria');
+
+            // Escuchar cambios en tiempo real
+            telemetriaRef.on('value', (snapshot) => {
+                const data = snapshot.val();
+                if (data) {
+                    // Actualizar Dashboard
+                    document.getElementById('val-lat').innerText = data.lat.toFixed(6);
+                    document.getElementById('val-lng').innerText = data.lng.toFixed(6);
+                    document.getElementById('val-sats').innerText = data.sats || "0";
+                    document.getElementById('val-bat').innerText = data.bat ? data.bat + "%" : "--%";
+                    document.getElementById('val-hora').innerText = data.ultima_actualizacion || "--:--:--";
+
+                    // Actualizar Mapa
+                    const nuevaPosicion = new L.LatLng(data.lat, data.lng);
+                    marcador.setLatLng(nuevaPosicion);
+                    mapa.panTo(nuevaPosicion); // Centra el mapa suavemente
+                    
+                    // Actualizar Estado de Conexión
+                    document.getElementById('status-dot').className = 'punto-verde';
+                    document.getElementById('status-text').innerText = 'En Línea';
+                }
+            }, (error) => {
+                console.error("Error leyendo Firebase:", error);
+                document.getElementById('status-dot').className = 'punto-rojo';
+                document.getElementById('status-text').innerText = 'Error de conexión';
+            });
+
+        } catch (e) {
+            console.error("Firebase no configurado aún:", e);
+            document.getElementById('status-text').innerText = 'Falta configurar Firebase';
+        }
+    </script>
+</body>
+</html>
