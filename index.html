@@ -211,6 +211,7 @@
         let polygonPoints = [];     // Coordenadas del cerco
         let drawingPolyline = null; // Línea temporal mientras se dibuja
         let safeZonePolygon = null; // Polígono final pintado
+        let dynamicLine = null;     // Línea "viva" que sigue al cursor
         let alarmaSilenciada = false;
 
         function iniciarDibujo() {
@@ -220,6 +221,7 @@
             // Limpiar dibujos anteriores
             if(safeZonePolygon) { mapa.removeLayer(safeZonePolygon); safeZonePolygon = null; }
             if(drawingPolyline) { mapa.removeLayer(drawingPolyline); drawingPolyline = null; }
+            if(dynamicLine) { mapa.removeLayer(dynamicLine); dynamicLine = null; }
 
             const btnZone = document.getElementById('btn-zone');
             btnZone.className = "btn-zone active";
@@ -237,8 +239,9 @@
             
             modoDibujoActivo = false;
             
-            // Limpiar la línea temporal
+            // Limpiar las líneas temporales
             if(drawingPolyline) { mapa.removeLayer(drawingPolyline); }
+            if(dynamicLine) { mapa.removeLayer(dynamicLine); }
             
             // Crear el polígono cerrado
             safeZonePolygon = L.polygon(polygonPoints, {
@@ -263,11 +266,30 @@
             if(modoDibujoActivo) {
                 polygonPoints.push([e.latlng.lat, e.latlng.lng]);
                 
-                // Actualizar línea dibujada
+                // Actualizar línea fija dibujada
                 if(!drawingPolyline) {
                     drawingPolyline = L.polyline(polygonPoints, {color: '#f59e0b', weight: 4}).addTo(mapa);
                 } else {
                     drawingPolyline.setLatLngs(polygonPoints);
+                }
+            }
+        });
+
+        // Evento para mantener la "línea viva" siguiendo el cursor (Mouse / Puntero)
+        mapa.on('mousemove', function(e) {
+            if(modoDibujoActivo && polygonPoints.length > 0) {
+                const lastPoint = polygonPoints[polygonPoints.length - 1];
+                const currentPos = [e.latlng.lat, e.latlng.lng];
+                
+                if(!dynamicLine) {
+                    // Línea viva punteada
+                    dynamicLine = L.polyline([lastPoint, currentPos], {
+                        color: '#f59e0b', 
+                        weight: 4, 
+                        dashArray: '5, 10'
+                    }).addTo(mapa);
+                } else {
+                    dynamicLine.setLatLngs([lastPoint, currentPos]);
                 }
             }
         });
