@@ -18,6 +18,7 @@
             padding: 0; 
             background-color: #0f172a; 
             color: #f8fafc;
+            overflow: hidden;
         }
         #header { 
             background: linear-gradient(90deg, #1e293b 0%, #0f172a 100%); 
@@ -27,6 +28,7 @@
             box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
         }
         h2 { margin: 0; font-weight: 800; letter-spacing: 1px; color: #38bdf8; }
+        
         #dashboard { 
             display: flex; 
             flex-wrap: wrap;
@@ -40,48 +42,102 @@
             position: relative;
             z-index: 1000;
         }
+        
+        /* Controles de Zona Segura */
+        #geofence-controls {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            background: #0f172a;
+            padding: 10px 20px;
+            border-radius: 8px;
+            border: 1px solid #38bdf8;
+            box-shadow: 0 0 10px rgba(56, 189, 248, 0.2);
+        }
+        
+        .btn-zone {
+            background-color: #38bdf8;
+            color: #0f172a;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .btn-zone:hover { background-color: #0ea5e9; }
+        .btn-zone.active { background-color: #f59e0b; color: white; animation: pulse 1.5s infinite; }
+        
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(245, 158, 11, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0); }
+        }
+
         .stat-card {
             background: #1e293b;
-            padding: 12px 24px;
-            border-radius: 10px;
+            padding: 10px 20px;
+            border-radius: 8px;
             border: 1px solid #334155;
             display: flex;
             align-items: center;
             gap: 10px;
-            transition: all 0.3s ease;
             box-shadow: 0 2px 4px rgba(0,0,0,0.2);
         }
-        .stat-card:hover {
-            transform: translateY(-2px);
-            border-color: #38bdf8;
-            box-shadow: 0 4px 12px rgba(56, 189, 248, 0.15);
-        }
+        
         .icon { font-size: 1.3rem; }
         .value { font-weight: 600; color: #e2e8f0; }
-        #mapa-container { height: calc(100vh - 145px); width: 100%; z-index: 1; }
-        .badge { 
-            background-color: #10b981; 
-            padding: 4px 10px; 
-            border-radius: 6px; 
-            font-weight: bold; 
-            color: white; 
-            box-shadow: 0 2px 4px rgba(16, 185, 129, 0.2);
-        }
-        .conexion-status {
-            position: absolute;
-            top: 20px;
-            right: 20px;
-            display: flex;
+        #mapa-container { height: calc(100vh - 150px); width: 100%; z-index: 1; cursor: default; }
+        .map-crosshair { cursor: crosshair !important; }
+        
+        .badge { background-color: #10b981; padding: 4px 10px; border-radius: 6px; font-weight: bold; }
+        
+        .conexion-status { position: absolute; top: 20px; right: 20px; display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 600; }
+        .punto-rojo { height: 10px; width: 10px; background-color: #ef4444; border-radius: 50%; box-shadow: 0 0 8px #ef4444;}
+        .punto-verde { height: 10px; width: 10px; background-color: #10b981; border-radius: 50%; box-shadow: 0 0 8px #10b981;}
+
+        /* PANTALLA DE ALERTA ROJA */
+        #alert-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background-color: rgba(239, 68, 68, 0.9);
+            z-index: 9999;
+            flex-direction: column;
+            justify-content: center;
             align-items: center;
-            gap: 8px;
-            font-size: 14px;
-            font-weight: 600;
+            animation: flash 1s infinite;
         }
-        .punto-rojo { height: 10px; width: 10px; background-color: #ef4444; border-radius: 50%; display: inline-block; }
-        .punto-verde { height: 10px; width: 10px; background-color: #10b981; border-radius: 50%; display: inline-block; box-shadow: 0 0 8px #10b981;}
+        
+        @keyframes flash {
+            0% { background-color: rgba(239, 68, 68, 0.9); }
+            50% { background-color: rgba(185, 28, 28, 0.95); }
+            100% { background-color: rgba(239, 68, 68, 0.9); }
+        }
+
+        #alert-overlay h1 {
+            font-size: 3rem;
+            text-align: center;
+            color: white;
+            text-shadow: 0 4px 8px rgba(0,0,0,0.5);
+            margin-bottom: 30px;
+        }
+        
+        #btn-stop-alert {
+            background: white; color: #ef4444; border: none; padding: 15px 30px;
+            font-size: 1.2rem; font-weight: bold; border-radius: 8px; cursor: pointer;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+        }
     </style>
 </head>
 <body>
+
+    <!-- Pantalla de Alerta Oculta -->
+    <div id="alert-overlay">
+        <h1>⚠️ ALERTA ⚠️<br>¡NIÑO FUERA DE LA ZONA!</h1>
+        <button id="btn-stop-alert" onclick="apagarAlarmaManual()">Silenciar Alarma</button>
+    </div>
+
     <div id="header">
         <h2>🛰️ ANTIGRAVITY LORA TRACKER</h2>
         <div class="conexion-status">
@@ -91,22 +147,18 @@
     </div>
     
     <div id="dashboard">
-        <div class="stat-card">
-            <span class="icon">📍</span>
-            <span>Lat: <span class="value" id="val-lat">--</span> | Lng: <span class="value" id="val-lng">--</span></span>
+        <!-- Controles de Geofencing -->
+        <div id="geofence-controls">
+            <button id="btn-zone" class="btn-zone" onclick="toggleModoZona()">🛡️ Fijar Zona Segura</button>
+            <div style="display: flex; flex-direction: column; font-size: 12px; gap: 4px;">
+                <label for="radius-slider">Radio: <span id="radius-val" style="color:#38bdf8; font-weight:bold;">50m</span></label>
+                <input type="range" id="radius-slider" min="10" max="500" value="50" oninput="actualizarRadio(this.value)">
+            </div>
         </div>
-        <div class="stat-card">
-            <span class="icon">🛰️</span>
-            <span>Satélites: <span class="badge" id="val-sats">--</span></span>
-        </div>
-        <div class="stat-card">
-            <span class="icon">🔋</span>
-            <span>Batería: <span class="value" style="color: #34d399;" id="val-bat">--%</span></span>
-        </div>
-        <div class="stat-card">
-            <span class="icon">🕒</span>
-            <span>Última act: <span class="value" id="val-hora">--:--:--</span></span>
-        </div>
+
+        <div class="stat-card"><span class="icon">📍</span><span>Lat: <span class="value" id="val-lat">--</span> | Lng: <span class="value" id="val-lng">--</span></span></div>
+        <div class="stat-card"><span class="icon">🛰️</span><span>Satélites: <span class="badge" id="val-sats">--</span></span></div>
+        <div class="stat-card"><span class="icon">🔋</span><span>Batería: <span class="value" style="color: #34d399;" id="val-bat">--%</span></span></div>
     </div>
     
     <div id="mapa-container"></div>
@@ -114,29 +166,125 @@
     <!-- Leaflet JS -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     
-    <!-- Firebase SDK Compat (para usar en HTML crudo fácilmente sin empaquetadores) -->
+    <!-- Firebase SDK Compat -->
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
 
     <script>
-        // --- 1. CONFIGURACIÓN DEL MAPA (LEAFLET) ---
-        // Coordenadas iniciales por defecto (Talca, Chile)
+        // --- 1. CONFIGURACIÓN DEL MAPA ---
         let latInicial = -35.426400;
         let lngInicial = -71.655400;
 
         const mapa = L.map('mapa-container').setView([latInicial, lngInicial], 17);
 
-        // Capa de Esri World Imagery (Mapa Satelital Real)
         L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
             attribution: 'Tiles &copy; Esri'
         }).addTo(mapa);
 
-        // Marcador
         const marcador = L.marker([latInicial, lngInicial]).addTo(mapa);
         marcador.bindPopup("<b>Móvil GPS</b>").openPopup();
 
-        // --- 2. CONFIGURACIÓN DE FIREBASE ---
-        // TODO: REEMPLAZAR CON TU CONFIGURACIÓN DE FIREBASE AL CREAR EL PROYECTO
+        // --- 2. LÓGICA DE GEOFENCING (ZONA SEGURA) ---
+        let modoZonaActivo = false;
+        let safeZoneCircle = null;
+        let safeZoneCenter = null;
+        let safeZoneRadius = 50; // Metros por defecto
+        let alarmaSilenciada = false;
+
+        function toggleModoZona() {
+            modoZonaActivo = !modoZonaActivo;
+            const btn = document.getElementById('btn-zone');
+            if(modoZonaActivo) {
+                btn.className = "btn-zone active";
+                btn.innerText = "Toca el mapa para fijar el centro...";
+                document.getElementById('mapa-container').classList.add('map-crosshair');
+            } else {
+                btn.className = "btn-zone";
+                btn.innerText = "🛡️ Fijar Zona Segura";
+                document.getElementById('mapa-container').classList.remove('map-crosshair');
+            }
+        }
+
+        function actualizarRadio(valor) {
+            safeZoneRadius = parseInt(valor);
+            document.getElementById('radius-val').innerText = safeZoneRadius + "m";
+            if(safeZoneCircle) {
+                safeZoneCircle.setRadius(safeZoneRadius);
+            }
+        }
+
+        mapa.on('click', function(e) {
+            if(modoZonaActivo) {
+                safeZoneCenter = e.latlng;
+                
+                // Borrar círculo anterior si existe
+                if(safeZoneCircle) { mapa.removeLayer(safeZoneCircle); }
+                
+                // Dibujar nuevo círculo
+                safeZoneCircle = L.circle(safeZoneCenter, {
+                    color: '#10b981',
+                    fillColor: '#10b981',
+                    fillOpacity: 0.3,
+                    radius: safeZoneRadius
+                }).addTo(mapa);
+                
+                // Resetear UI
+                toggleModoZona();
+                alarmaSilenciada = false; // Reactivar alarmas si se fija nueva zona
+                document.getElementById('btn-zone').innerText = "🛡️ Zona Cambiada (Toca para re-fijar)";
+            }
+        });
+
+        // --- 3. GENERADOR DE ALARMA (Web Audio API) ---
+        let audioCtx;
+        let alarmInterval;
+        
+        function iniciarContextoAudio() {
+            if(!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+        }
+
+        function playAlarm() {
+            if(alarmaSilenciada) return;
+            document.getElementById('alert-overlay').style.display = 'flex';
+            
+            iniciarContextoAudio();
+            if(audioCtx.state === 'suspended') audioCtx.resume();
+            
+            if(alarmInterval) return; // Ya está sonando
+            
+            alarmInterval = setInterval(() => {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = 'square';
+                osc.frequency.setValueAtTime(880, audioCtx.currentTime); // Tono alto
+                osc.frequency.exponentialRampToValueAtTime(440, audioCtx.currentTime + 0.3); // Caída rápida
+                
+                gain.gain.setValueAtTime(1, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+                
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start();
+                osc.stop(audioCtx.currentTime + 0.3);
+            }, 500); // Suena cada medio segundo
+        }
+
+        function stopAlarm() {
+            document.getElementById('alert-overlay').style.display = 'none';
+            if(alarmInterval) {
+                clearInterval(alarmInterval);
+                alarmInterval = null;
+            }
+        }
+
+        function apagarAlarmaManual() {
+            alarmaSilenciada = true;
+            stopAlarm();
+        }
+
+        // --- 4. FIREBASE Y RECEPCIÓN DE DATOS ---
         const firebaseConfig = {
             apiKey: "AIzaSyCFSI06EZP_Cb-FJIh-Z6NtG-qdGah_aPw",
             authDomain: "gpsua-a8e4a.firebaseapp.com",
@@ -148,42 +296,43 @@
         };
 
         try {
-            // Inicializar Firebase
             firebase.initializeApp(firebaseConfig);
             const db = firebase.database();
-            
-            // Referencia a la ruta donde se guardarán los datos (ej: "dispositivos/lora_1")
             const telemetriaRef = db.ref('telemetria');
 
-            // Escuchar cambios en tiempo real
+            // Cada vez que la Base envíe un dato nuevo
             telemetriaRef.on('value', (snapshot) => {
                 const data = snapshot.val();
                 if (data) {
-                    // Actualizar Dashboard
                     document.getElementById('val-lat').innerText = data.lat.toFixed(6);
                     document.getElementById('val-lng').innerText = data.lng.toFixed(6);
                     document.getElementById('val-sats').innerText = data.sats || "0";
                     document.getElementById('val-bat').innerText = data.bat ? data.bat + "%" : "--%";
-                    document.getElementById('val-hora').innerText = data.ultima_actualizacion || "--:--:--";
 
-                    // Actualizar Mapa
                     const nuevaPosicion = new L.LatLng(data.lat, data.lng);
                     marcador.setLatLng(nuevaPosicion);
-                    mapa.panTo(nuevaPosicion); // Centra el mapa suavemente
+                    mapa.panTo(nuevaPosicion);
                     
-                    // Actualizar Estado de Conexión
                     document.getElementById('status-dot').className = 'punto-verde';
                     document.getElementById('status-text').innerText = 'En Línea';
+
+                    // CHEQUEO DE GEOFENCING (Distancia en metros)
+                    if (safeZoneCenter) {
+                        const distanciaMetros = mapa.distance(safeZoneCenter, nuevaPosicion);
+                        if (distanciaMetros > safeZoneRadius) {
+                            playAlarm(); // ¡SE SALIÓ DEL CÍRCULO!
+                        } else {
+                            stopAlarm(); // Volvió al círculo
+                            alarmaSilenciada = false; // Resetear el modo silencio si vuelve a entrar
+                        }
+                    }
                 }
             }, (error) => {
-                console.error("Error leyendo Firebase:", error);
                 document.getElementById('status-dot').className = 'punto-rojo';
-                document.getElementById('status-text').innerText = 'Error de conexión';
+                document.getElementById('status-text').innerText = 'Error';
             });
-
         } catch (e) {
-            console.error("Firebase no configurado aún:", e);
-            document.getElementById('status-text').innerText = 'Falta configurar Firebase';
+            console.error(e);
         }
     </script>
 </body>
