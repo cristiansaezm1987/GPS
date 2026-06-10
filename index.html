@@ -75,7 +75,20 @@
             font-size: 14px;
         }
         .btn-zone:hover { background-color: #0ea5e9; }
-        .btn-zone.active { background-color: #f59e0b; color: white; animation: pulse 1.5s infinite; }
+        
+        .btn-add {
+            display: none;
+            background-color: #f59e0b;
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-weight: bold;
+            cursor: pointer;
+            font-size: 14px;
+            animation: pulse 1.5s infinite;
+        }
+        .btn-add:hover { background-color: #d97706; }
 
         .btn-finish {
             display: none;
@@ -112,8 +125,29 @@
         
         .icon { font-size: 1.2rem; }
         .value { font-weight: 600; color: #e2e8f0; }
-        #mapa-container { flex: 1; width: 100%; z-index: 1; cursor: default; }
-        .map-crosshair { cursor: crosshair !important; }
+        
+        /* Contenedor del Mapa y Crosshair */
+        #mapa-wrapper {
+            position: relative;
+            flex: 1;
+            width: 100%;
+            z-index: 1;
+        }
+        #mapa-container { width: 100%; height: 100%; cursor: default; }
+        
+        /* La mira central (Crosshair) */
+        #crosshair {
+            display: none;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 24px;
+            color: white;
+            text-shadow: 0 0 4px black;
+            z-index: 2000;
+            pointer-events: none; /* Los toques lo atraviesan */
+        }
         
         .badge { background-color: #10b981; padding: 4px 10px; border-radius: 6px; font-weight: bold; }
         
@@ -172,9 +206,10 @@
     </div>
     
     <div id="dashboard">
-        <!-- Controles de Geofencing Poligonal -->
+        <!-- Controles de Geofencing Móvil -->
         <div id="geofence-controls">
-            <button id="btn-zone" class="btn-zone" onclick="iniciarDibujo()">✏️ Dibujar Perímetro</button>
+            <button id="btn-zone" class="btn-zone" onclick="iniciarDibujo()">✏️ Crear Perímetro</button>
+            <button id="btn-add" class="btn-add" onclick="añadirPunto()">📍 Añadir Punto</button>
             <button id="btn-finish" class="btn-finish" onclick="finalizarDibujo()">✅ Cerrar Cerco</button>
         </div>
 
@@ -183,7 +218,10 @@
         <div class="stat-card"><span class="icon">🔋</span><span>Batería: <span class="value" style="color: #34d399;" id="val-bat">--%</span></span></div>
     </div>
     
-    <div id="mapa-container"></div>
+    <div id="mapa-wrapper">
+        <div id="mapa-container"></div>
+        <div id="crosshair">➕</div>
+    </div>
 
     <!-- Leaflet JS -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -206,44 +244,91 @@
         const marcador = L.marker([latInicial, lngInicial]).addTo(mapa);
         marcador.bindPopup("<b>Móvil GPS</b>").openPopup();
 
-        // --- 2. LÓGICA DE DIBUJO DE POLÍGONO ---
+        // --- 2. LÓGICA DE DIBUJO DE POLÍGONO (MODO MÓVIL CROSSHAIR) ---
         let modoDibujoActivo = false;
-        let polygonPoints = [];     // Coordenadas del cerco
-        let drawingPolyline = null; // Línea temporal mientras se dibuja
-        let safeZonePolygon = null; // Polígono final pintado
-        let dynamicLine = null;     // Línea "viva" que sigue al cursor
+        let polygonPoints = [];     
+        let vertexMarkers = [];     // Arreglo para guardar los puntitos rojos de las esquinas
+        let drawingPolyline = null; 
+        let safeZonePolygon = null; 
+        let dynamicLine = null;     
         let alarmaSilenciada = false;
+
+        function limpiarDibujosTemporales() {
+            if(drawingPolyline) { mapa.removeLayer(drawingPolyline); drawingPolyline = null; }
+            if(dynamicLine) { mapa.removeLayer(dynamicLine); dynamicLine = null; }
+            vertexMarkers.forEach(m => mapa.removeLayer(m));
+            vertexMarkers = [];
+        }
 
         function iniciarDibujo() {
             modoDibujoActivo = true;
             polygonPoints = [];
             
-            // Limpiar dibujos anteriores
+            // Limpiar polígono anterior y temporales
             if(safeZonePolygon) { mapa.removeLayer(safeZonePolygon); safeZonePolygon = null; }
-            if(drawingPolyline) { mapa.removeLayer(drawingPolyline); drawingPolyline = null; }
-            if(dynamicLine) { mapa.removeLayer(dynamicLine); dynamicLine = null; }
+            limpiarDibujosTemporales();
 
-            const btnZone = document.getElementById('btn-zone');
-            btnZone.className = "btn-zone active";
-            btnZone.innerText = "Toca las esquinas en el mapa...";
-            
+            // Interfaz
+            document.getElementById('btn-zone').style.display = 'none';
+            document.getElementById('btn-add').style.display = 'block';
             document.getElementById('btn-finish').style.display = 'block';
-            document.getElementById('mapa-container').classList.add('map-crosshair');
+            document.getElementById('crosshair').style.display = 'block'; // Mostrar la mira
         }
+
+        // Esta función se llama con el botón "Añadir Punto", leyendo el centro del mapa
+        function añadirPunto() {
+            if(!modoDibujoActivo) return;
+            
+            const center = mapa.getCenter();
+            polygonPoints.push([center.lat, center.lng]);
+            
+            // 1. Dibujar el punto rojo visual
+            let vMarker = L.circleMarker(center, {
+                color: '#ef4444',
+                fillColor: '#ef4444',
+                fillOpacity: 1,
+                radius: 5
+            }).addTo(mapa);
+            vertexMarkers.push(vMarker);
+            
+            // 2. Actualizar la línea sólida que une los puntos
+            if(!drawingPolyline) {
+                drawingPolyline = L.polyline(polygonPoints, {color: '#f59e0b', weight: 4}).addTo(mapa);
+            } else {
+                drawingPolyline.setLatLngs(polygonPoints);
+            }
+        }
+
+        // Evento 'move' que funciona tanto al arrastrar con dedo (móvil) o mouse (PC)
+        mapa.on('move', function(e) {
+            if(modoDibujoActivo && polygonPoints.length > 0) {
+                const lastPoint = polygonPoints[polygonPoints.length - 1];
+                const currentCenter = mapa.getCenter(); // Siempre apuntamos a la mira central
+                
+                if(!dynamicLine) {
+                    dynamicLine = L.polyline([lastPoint, currentCenter], {
+                        color: '#f59e0b', 
+                        weight: 4, 
+                        dashArray: '5, 10'
+                    }).addTo(mapa);
+                } else {
+                    dynamicLine.setLatLngs([lastPoint, currentCenter]);
+                }
+            }
+        });
 
         function finalizarDibujo() {
             if(polygonPoints.length < 3) {
-                alert("Debes tocar al menos 3 puntos para cerrar un cerco.");
+                alert("Debes añadir al menos 3 puntos con la mira para cerrar un cerco.");
                 return;
             }
             
             modoDibujoActivo = false;
             
-            // Limpiar las líneas temporales
-            if(drawingPolyline) { mapa.removeLayer(drawingPolyline); }
-            if(dynamicLine) { mapa.removeLayer(dynamicLine); }
+            // Limpiar las líneas y puntos temporales
+            limpiarDibujosTemporales();
             
-            // Crear el polígono cerrado
+            // Crear el polígono cerrado verde
             safeZonePolygon = L.polygon(polygonPoints, {
                 color: '#10b981',
                 fillColor: '#10b981',
@@ -251,51 +336,17 @@
                 weight: 3
             }).addTo(mapa);
 
-            // Restaurar botones
-            const btnZone = document.getElementById('btn-zone');
-            btnZone.className = "btn-zone";
-            btnZone.innerText = "✏️ Re-dibujar Perímetro";
-            
+            // Restaurar Interfaz
+            document.getElementById('btn-zone').style.display = 'block';
+            document.getElementById('btn-zone').innerText = "✏️ Re-crear Perímetro";
+            document.getElementById('btn-add').style.display = 'none';
             document.getElementById('btn-finish').style.display = 'none';
-            document.getElementById('mapa-container').classList.remove('map-crosshair');
+            document.getElementById('crosshair').style.display = 'none';
             
             alarmaSilenciada = false; // El nuevo cerco está activo
         }
 
-        mapa.on('click', function(e) {
-            if(modoDibujoActivo) {
-                polygonPoints.push([e.latlng.lat, e.latlng.lng]);
-                
-                // Actualizar línea fija dibujada
-                if(!drawingPolyline) {
-                    drawingPolyline = L.polyline(polygonPoints, {color: '#f59e0b', weight: 4}).addTo(mapa);
-                } else {
-                    drawingPolyline.setLatLngs(polygonPoints);
-                }
-            }
-        });
-
-        // Evento para mantener la "línea viva" siguiendo el cursor (Mouse / Puntero)
-        mapa.on('mousemove', function(e) {
-            if(modoDibujoActivo && polygonPoints.length > 0) {
-                const lastPoint = polygonPoints[polygonPoints.length - 1];
-                const currentPos = [e.latlng.lat, e.latlng.lng];
-                
-                if(!dynamicLine) {
-                    // Línea viva punteada
-                    dynamicLine = L.polyline([lastPoint, currentPos], {
-                        color: '#f59e0b', 
-                        weight: 4, 
-                        dashArray: '5, 10'
-                    }).addTo(mapa);
-                } else {
-                    dynamicLine.setLatLngs([lastPoint, currentPos]);
-                }
-            }
-        });
-
         // --- 3. ALGORITMO: PUNTO DENTRO DE POLÍGONO (Ray-Casting) ---
-        // Verifica matemáticamente si la coordenada GPS está dentro del cerco
         function estaDentroDelPoligono(punto, poligono) {
             let x = punto[0], y = punto[1];
             let dentro = false;
@@ -380,7 +431,7 @@
                     const nuevaPosicion = new L.LatLng(data.lat, data.lng);
                     marcador.setLatLng(nuevaPosicion);
                     
-                    // Solo centrar si NO estamos dibujando
+                    // Solo centrar al dispositivo si NO estamos dibujando
                     if(!modoDibujoActivo) {
                         mapa.panTo(nuevaPosicion);
                     }
@@ -393,9 +444,9 @@
                         const estaSeguro = estaDentroDelPoligono([data.lat, data.lng], polygonPoints);
                         
                         if (!estaSeguro) {
-                            playAlarm(); // ¡SALIÓ DEL POLÍGONO!
+                            playAlarm(); 
                         } else {
-                            stopAlarm(); // Volvió a entrar
+                            stopAlarm(); 
                             alarmaSilenciada = false;
                         }
                     }
