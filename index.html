@@ -44,12 +44,11 @@
             border-bottom: 1px solid #334155;
             position: relative;
             z-index: 1000;
-            max-height: 35vh;
+            max-height: 40vh;
             overflow-y: auto;
             flex-shrink: 0;
         }
         
-        /* Controles de Zona Segura Poligonal */
         #geofence-controls {
             display: flex;
             align-items: center;
@@ -61,6 +60,7 @@
             box-shadow: 0 0 10px rgba(56, 189, 248, 0.2);
             width: 100%;
             justify-content: center;
+            flex-wrap: wrap;
         }
         
         .btn-zone {
@@ -77,19 +77,6 @@
         .btn-zone:hover { background-color: #0ea5e9; }
         .btn-zone.active { background-color: #f59e0b; color: white; animation: pulse 1.5s infinite; }
 
-        .btn-finish {
-            display: none;
-            background-color: #10b981;
-            color: white;
-            border: none;
-            padding: 8px 12px;
-            border-radius: 6px;
-            font-weight: bold;
-            cursor: pointer;
-            font-size: 14px;
-        }
-        .btn-finish:hover { background-color: #059669; }
-        
         @keyframes pulse {
             0% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.7); }
             70% { box-shadow: 0 0 0 10px rgba(245, 158, 11, 0); }
@@ -113,53 +100,90 @@
         .icon { font-size: 1.2rem; }
         .value { font-weight: 600; color: #e2e8f0; }
         #mapa-container { flex: 1; width: 100%; z-index: 1; cursor: default; }
-        .map-crosshair { cursor: crosshair !important; }
         
         .badge { background-color: #10b981; padding: 4px 10px; border-radius: 6px; font-weight: bold; }
-        
         .conexion-status { position: absolute; top: 20px; right: 20px; display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 600; }
         .punto-rojo { height: 10px; width: 10px; background-color: #ef4444; border-radius: 50%; box-shadow: 0 0 8px #ef4444;}
         .punto-verde { height: 10px; width: 10px; background-color: #10b981; border-radius: 50%; box-shadow: 0 0 8px #10b981;}
 
+        /* MODAL DE GUARDADO DE ZONA */
+        #modal-zona {
+            display: none;
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8);
+            z-index: 5000;
+            justify-content: center; align-items: center;
+        }
+        .modal-content {
+            background: #1e293b; padding: 20px; border-radius: 12px;
+            width: 90%; max-width: 400px; border: 1px solid #334155;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+        }
+        .modal-content h3 { margin-top: 0; color: #38bdf8; text-align: center; }
+        .modal-content input {
+            width: 90%; padding: 10px; margin: 10px 0;
+            background: #0f172a; border: 1px solid #38bdf8; color: white; border-radius: 6px;
+        }
+        .modal-content label { font-size: 14px; font-weight: bold; color: #cbd5e1; }
+        .modal-content button {
+            width: 100%; padding: 12px; margin-top: 10px; border: none; border-radius: 6px;
+            font-weight: bold; cursor: pointer; font-size: 16px;
+        }
+        .btn-save { background: #10b981; color: white; }
+        .btn-save:hover { background: #059669; }
+        .btn-cancel { background: #64748b; color: white; }
+
+        /* PANEL DE ZONAS GUARDADAS */
+        #panel-zonas {
+            max-height: 120px; overflow-y: auto; background: #0f172a; border-radius: 8px;
+            padding: 10px; width: 100%; border: 1px solid #334155;
+        }
+        .zona-item {
+            display: flex; justify-content: space-between; align-items: center;
+            background: #1e293b; padding: 8px 12px; margin-bottom: 5px; border-radius: 6px;
+            border-left: 5px solid #3b82f6; /* Azul: inactivo por horario */
+        }
+        .zona-item.active { border-left-color: #10b981; } /* Verde: activo por horario */
+        .btn-delete-zona { background: #ef4444; color: white; border:none; border-radius: 4px; cursor: pointer; padding: 6px 10px; font-weight: bold;}
+
         /* PANTALLA DE ALERTA ROJA */
         #alert-overlay {
             display: none;
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background-color: rgba(239, 68, 68, 0.9);
-            z-index: 9999;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
+            z-index: 9999; flex-direction: column; justify-content: center; align-items: center;
             animation: flash 1s infinite;
         }
-        
         @keyframes flash {
             0% { background-color: rgba(239, 68, 68, 0.9); }
             50% { background-color: rgba(185, 28, 28, 0.95); }
             100% { background-color: rgba(239, 68, 68, 0.9); }
         }
-
-        #alert-overlay h1 {
-            font-size: 3rem;
-            text-align: center;
-            color: white;
-            text-shadow: 0 4px 8px rgba(0,0,0,0.5);
-            margin-bottom: 30px;
-        }
-        
-        #btn-stop-alert {
-            background: white; color: #ef4444; border: none; padding: 15px 30px;
-            font-size: 1.2rem; font-weight: bold; border-radius: 8px; cursor: pointer;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
-        }
+        #alert-overlay h1 { font-size: 3rem; text-align: center; color: white; text-shadow: 0 4px 8px rgba(0,0,0,0.5); margin-bottom: 30px; }
+        #btn-stop-alert { background: white; color: #ef4444; border: none; padding: 15px 30px; font-size: 1.2rem; font-weight: bold; border-radius: 8px; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
     </style>
 </head>
 <body>
 
+    <!-- Pantalla de Alerta Oculta -->
     <div id="alert-overlay">
-        <h1>⚠️ ALERTA ⚠️<br>¡NIÑO FUERA DEL PERÍMETRO!</h1>
+        <h1>⚠️ ALERTA ⚠️<br>¡NIÑO FUERA DE LA ZONA PROGRAMADA!</h1>
         <button id="btn-stop-alert" onclick="apagarAlarmaManual()">Silenciar Alarma</button>
+    </div>
+
+    <!-- Modal para Guardar Zona -->
+    <div id="modal-zona">
+        <div class="modal-content">
+            <h3>NUEVA ZONA SEGURA</h3>
+            <label>Nombre del Lugar:</label>
+            <input type="text" id="zona-nombre" placeholder="Ej: Colegio o Plaza Las Heras">
+            <label>Hora de Inicio (Obligatorio):</label>
+            <input type="time" id="zona-inicio" value="08:00">
+            <label>Hora de Fin (Obligatorio):</label>
+            <input type="time" id="zona-fin" value="14:00">
+            <button class="btn-save" onclick="guardarZonaFirebase()">💾 Guardar en la Nube</button>
+            <button class="btn-cancel" onclick="cancelarZona()">❌ Descartar</button>
+        </div>
     </div>
 
     <div id="header">
@@ -172,13 +196,17 @@
     
     <div id="dashboard">
         <div id="geofence-controls">
-            <button id="btn-zone" class="btn-zone" onclick="iniciarDibujo()">✏️ Crear Perímetro</button>
-            <button id="btn-finish" class="btn-finish" onclick="finalizarDibujo()">✅ Cerrar Cerco</button>
+            <button id="btn-zone" class="btn-zone" onclick="iniciarDibujo()">✏️ Dibujar Nueva Zona Segura</button>
         </div>
 
         <div class="stat-card"><span class="icon">📍</span><span>Lat: <span class="value" id="val-lat">--</span> | Lng: <span class="value" id="val-lng">--</span></span></div>
-        <div class="stat-card"><span class="icon">🛰️</span><span>Satélites: <span class="badge" id="val-sats">--</span></span></div>
         <div class="stat-card"><span class="icon">🔋</span><span>Batería: <span class="value" style="color: #34d399;" id="val-bat">--%</span></span></div>
+        
+        <!-- Panel de Zonas Guardadas -->
+        <div id="panel-zonas">
+            <strong>📋 Zonas Guardadas en la Nube</strong><br>
+            <small>Cargando...</small>
+        </div>
     </div>
     
     <div id="mapa-container"></div>
@@ -191,7 +219,6 @@
         // --- 1. CONFIGURACIÓN DEL MAPA ---
         let latInicial = -35.426400;
         let lngInicial = -71.655400;
-
         const mapa = L.map('mapa-container').setView([latInicial, lngInicial], 17);
 
         L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
@@ -201,14 +228,12 @@
         const marcador = L.marker([latInicial, lngInicial]).addTo(mapa);
         marcador.bindPopup("<b>Móvil GPS</b>").openPopup();
 
-        // --- 2. LÓGICA DE DIBUJO DE POLÍGONO (CLICKS) ---
+        // --- 2. LÓGICA DE DIBUJO ---
         let modoDibujoActivo = false;
         let polygonPoints = [];     
-        let vertexMarkers = [];     // Puntitos rojos en los vértices
+        let vertexMarkers = [];     
         let drawingPolyline = null; 
-        let safeZonePolygon = null; 
         let dynamicLine = null;     
-        let alarmaSilenciada = false;
 
         function limpiarDibujosTemporales() {
             if(drawingPolyline) { mapa.removeLayer(drawingPolyline); drawingPolyline = null; }
@@ -220,139 +245,238 @@
         function iniciarDibujo() {
             modoDibujoActivo = true;
             polygonPoints = [];
-            
-            if(safeZonePolygon) { mapa.removeLayer(safeZonePolygon); safeZonePolygon = null; }
             limpiarDibujosTemporales();
-
-            const btnZone = document.getElementById('btn-zone');
-            btnZone.className = "btn-zone active";
-            btnZone.innerText = "Toca las calles para marcar puntos...";
-            
-            document.getElementById('btn-finish').style.display = 'block';
-            document.getElementById('mapa-container').classList.add('map-crosshair');
+            document.getElementById('btn-zone').className = "btn-zone active";
+            document.getElementById('btn-zone').innerText = "Toca las calles para marcar esquinas...";
         }
 
-        // EVENTO CLICK DIRECTO SOBRE EL MAPA
         mapa.on('click', function(e) {
             if(!modoDibujoActivo) return;
             
-            // Si hay al menos 3 puntos, verificar si tocó cerca del punto de inicio para CERRAR
+            // Auto-Cierre
             if (polygonPoints.length >= 3) {
                 const puntoInicio = new L.LatLng(polygonPoints[0][0], polygonPoints[0][1]);
-                const distanciaMetros = mapa.distance(puntoInicio, e.latlng);
-                
-                // Si toca a menos de 40 metros del primer punto, se auto-cierra mágicamente
-                if (distanciaMetros < 40) {
-                    finalizarDibujo();
-                    return; // Termina aquí, no añade un punto extra
+                if (mapa.distance(puntoInicio, e.latlng) < 40) {
+                    finalizarDibujo(); return; 
                 }
             }
             
             polygonPoints.push([e.latlng.lat, e.latlng.lng]);
+            let vMarker = L.circleMarker(e.latlng, {color: '#ef4444', fillOpacity: 1, radius: 6}).addTo(mapa);
             
-            // 1. Dibujar el punto rojo visual en la esquina
-            let vMarker = L.circleMarker(e.latlng, {
-                color: '#ef4444',
-                fillColor: '#ef4444',
-                fillOpacity: 1,
-                radius: 6
-            }).addTo(mapa);
-            
-            // Si es el PRIMER punto, le damos propiedades especiales para que el usuario sepa que debe volver ahí
             if (polygonPoints.length === 1) {
                 vMarker.bindTooltip("Vuelve aquí para cerrar", {direction: 'top', permanent: true}).openTooltip();
-                
-                // Dibujar un halo de "magnetismo" de 40 metros para que sea fácil apuntarle
-                let haloMagnetico = L.circle(e.latlng, {
-                    color: '#f59e0b',
-                    fillColor: '#f59e0b',
-                    fillOpacity: 0.2,
-                    radius: 40,
-                    dashArray: '5, 5'
-                }).addTo(mapa);
-                vertexMarkers.push(haloMagnetico); // Se borrará solo al finalizar
+                let halo = L.circle(e.latlng, {color: '#f59e0b', fillOpacity: 0.2, radius: 40, dashArray: '5,5'}).addTo(mapa);
+                vertexMarkers.push(halo);
             }
-            
             vertexMarkers.push(vMarker);
             
-            // 2. Actualizar la línea sólida que une los puntos
-            if(!drawingPolyline) {
-                drawingPolyline = L.polyline(polygonPoints, {color: '#f59e0b', weight: 4}).addTo(mapa);
-            } else {
-                drawingPolyline.setLatLngs(polygonPoints);
-            }
+            if(!drawingPolyline) { drawingPolyline = L.polyline(polygonPoints, {color: '#f59e0b', weight: 4}).addTo(mapa); } 
+            else { drawingPolyline.setLatLngs(polygonPoints); }
         });
 
-        // Evento 'mousemove' para la línea viva elástica
         mapa.on('mousemove', function(e) {
             if(modoDibujoActivo && polygonPoints.length > 0) {
                 const lastPoint = polygonPoints[polygonPoints.length - 1];
-                const currentCursor = [e.latlng.lat, e.latlng.lng]; 
-                
                 if(!dynamicLine) {
-                    dynamicLine = L.polyline([lastPoint, currentCursor], {
-                        color: '#f59e0b', 
-                        weight: 4, 
-                        dashArray: '5, 10'
-                    }).addTo(mapa);
+                    dynamicLine = L.polyline([lastPoint, [e.latlng.lat, e.latlng.lng]], {color: '#f59e0b', weight: 4, dashArray: '5,10'}).addTo(mapa);
                 } else {
-                    dynamicLine.setLatLngs([lastPoint, currentCursor]);
+                    dynamicLine.setLatLngs([lastPoint, [e.latlng.lat, e.latlng.lng]]);
                 }
             }
         });
 
         function finalizarDibujo() {
-            if(polygonPoints.length < 3) {
-                alert("Debes añadir al menos 3 puntos para cerrar un cerco.");
-                return;
-            }
-            
+            if(polygonPoints.length < 3) return;
             modoDibujoActivo = false;
-            
             limpiarDibujosTemporales();
-            
-            safeZonePolygon = L.polygon(polygonPoints, {
-                color: '#10b981',
-                fillColor: '#10b981',
-                fillOpacity: 0.3,
-                weight: 3
-            }).addTo(mapa);
-
             document.getElementById('btn-zone').className = "btn-zone";
-            document.getElementById('btn-zone').innerText = "✏️ Re-crear Perímetro";
-            document.getElementById('btn-finish').style.display = 'none';
-            document.getElementById('mapa-container').classList.remove('map-crosshair');
+            document.getElementById('btn-zone').innerText = "✏️ Dibujar Nueva Zona Segura";
             
-            alarmaSilenciada = false; 
+            // Abrir Modal para guardar la zona
+            document.getElementById('modal-zona').style.display = 'flex';
         }
 
-        // --- 3. ALGORITMO: PUNTO DENTRO DE POLÍGONO (Ray-Casting) ---
+        // --- 3. MODAL Y FIREBASE (ZONAS MULTIPLES) ---
+        const firebaseConfig = {
+            apiKey: "AIzaSyCFSI06EZP_Cb-FJIh-Z6NtG-qdGah_aPw",
+            authDomain: "gpsua-a8e4a.firebaseapp.com",
+            databaseURL: "https://gpsua-a8e4a-default-rtdb.firebaseio.com",
+            projectId: "gpsua-a8e4a",
+            storageBucket: "gpsua-a8e4a.firebasestorage.app",
+            messagingSenderId: "326653039016",
+            appId: "1:326653039016:web:dd889bafd686d1a0d10d9d"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+        const zonasRef = db.ref('zonas_seguras');
+        const telemetriaRef = db.ref('telemetria');
+
+        let globalZonas = {};
+        let polygonsMap = {}; // Guarda las referencias a los polígonos dibujados
+        let alarmaSilenciada = false;
+
+        // GUARDAR ZONA
+        function guardarZonaFirebase() {
+            const nombre = document.getElementById('zona-nombre').value;
+            const inicio = document.getElementById('zona-inicio').value;
+            const fin = document.getElementById('zona-fin').value;
+            
+            if(!nombre || !inicio || !fin) { alert("Completa todos los campos"); return; }
+            
+            zonasRef.push({
+                nombre: nombre,
+                inicio: inicio,
+                fin: fin,
+                puntos: polygonPoints
+            });
+            
+            document.getElementById('zona-nombre').value = "";
+            document.getElementById('modal-zona').style.display = 'none';
+            polygonPoints = []; // Limpiar
+        }
+
+        function cancelarZona() {
+            document.getElementById('modal-zona').style.display = 'none';
+            polygonPoints = [];
+        }
+
+        function borrarZona(key) {
+            if(confirm("¿Seguro que deseas eliminar esta zona permanentemente?")) {
+                zonasRef.child(key).remove();
+            }
+        }
+
+        // DESCARGAR Y DIBUJAR ZONAS
+        zonasRef.on('value', (snapshot) => {
+            globalZonas = snapshot.val() || {};
+            renderZonas();
+        });
+
+        // Actualizar colores cada minuto por si un horario cambia
+        setInterval(renderZonas, 60000);
+
+        function renderZonas() {
+            // Limpiar polígonos viejos
+            Object.values(polygonsMap).forEach(p => mapa.removeLayer(p));
+            polygonsMap = {};
+            
+            const panel = document.getElementById('panel-zonas');
+            panel.innerHTML = '<strong>📋 Zonas Guardadas en la Nube</strong><br>';
+            if(Object.keys(globalZonas).length === 0) panel.innerHTML += '<small>No tienes zonas guardadas. Dibuja una.</small>';
+            
+            const nowMins = new Date().getHours() * 60 + new Date().getMinutes();
+
+            for(let key in globalZonas) {
+                let z = globalZonas[key];
+                
+                // Verificar horario
+                let [h1, m1] = z.inicio.split(':');
+                let [h2, m2] = z.fin.split(':');
+                let startMins = parseInt(h1)*60 + parseInt(m1);
+                let endMins = parseInt(h2)*60 + parseInt(m2);
+                
+                let isActive = false;
+                if(startMins <= endMins) {
+                    isActive = (nowMins >= startMins && nowMins <= endMins);
+                } else { // Si cruza la medianoche
+                    isActive = (nowMins >= startMins || nowMins <= endMins);
+                }
+                
+                // Dibujar en el mapa
+                let color = isActive ? '#10b981' : '#3b82f6'; // Verde si activa, Azul si inactiva
+                let poly = L.polygon(z.puntos, {
+                    color: color, fillColor: color, fillOpacity: 0.3, weight: 3
+                }).addTo(mapa);
+                poly.bindTooltip(`<b>${z.nombre}</b><br>Horario: ${z.inicio} - ${z.fin}`, {permanent: false});
+                polygonsMap[key] = poly;
+                
+                // Renderizar en el panel HTML
+                panel.innerHTML += `
+                    <div class="zona-item ${isActive ? 'active' : ''}">
+                        <span><b>${z.nombre}</b> <small>(${z.inicio} a ${z.fin})</small></span>
+                        <button class="btn-delete-zona" onclick="borrarZona('${key}')">Eliminar</button>
+                    </div>
+                `;
+            }
+        }
+
+        // --- 4. ALGORITMO RAY-CASTING ---
         function estaDentroDelPoligono(punto, poligono) {
-            let x = punto[0], y = punto[1];
-            let dentro = false;
+            let x = punto[0], y = punto[1], dentro = false;
             for (let i = 0, j = poligono.length - 1; i < poligono.length; j = i++) {
                 let xi = poligono[i][0], yi = poligono[i][1];
                 let xj = poligono[j][0], yj = poligono[j][1];
-                
                 let cruza = ((yi > y) != (yj > y)) && (x < (xj - xi) * (y - yi) / (yj - yi) + xi);
                 if (cruza) dentro = !dentro;
             }
             return dentro;
         }
 
-        // --- 4. GENERADOR DE ALARMA (Web Audio API) ---
+        // --- 5. RECEPCIÓN DE DATOS Y EVALUACIÓN DE ALARMA ---
+        telemetriaRef.on('value', (snapshot) => {
+            const data = snapshot.val();
+            if (data) {
+                document.getElementById('val-lat').innerText = data.lat.toFixed(6);
+                document.getElementById('val-lng').innerText = data.lng.toFixed(6);
+                document.getElementById('val-bat').innerText = data.bat ? data.bat + "%" : "--%";
+
+                const nuevaPosicion = new L.LatLng(data.lat, data.lng);
+                marcador.setLatLng(nuevaPosicion);
+                
+                if(!modoDibujoActivo) mapa.panTo(nuevaPosicion);
+                
+                document.getElementById('status-dot').className = 'punto-verde';
+                document.getElementById('status-text').innerText = 'En Línea';
+
+                // --- EVALUACIÓN DE TODAS LAS ZONAS MULTIPLES ---
+                const nowMins = new Date().getHours() * 60 + new Date().getMinutes();
+                let hayZonasActivas = false;
+                let dentroDeAlguna = false;
+                
+                for(let key in globalZonas) {
+                    let z = globalZonas[key];
+                    let [h1, m1] = z.inicio.split(':');
+                    let [h2, m2] = z.fin.split(':');
+                    let startMins = parseInt(h1)*60 + parseInt(m1);
+                    let endMins = parseInt(h2)*60 + parseInt(m2);
+                    
+                    let isActive = false;
+                    if(startMins <= endMins) {
+                        isActive = (nowMins >= startMins && nowMins <= endMins);
+                    } else {
+                        isActive = (nowMins >= startMins || nowMins <= endMins);
+                    }
+                    
+                    if(isActive) {
+                        hayZonasActivas = true; // El niño DEBE estar en alguna zona
+                        if(estaDentroDelPoligono([data.lat, data.lng], z.puntos)) {
+                            dentroDeAlguna = true;
+                        }
+                    }
+                }
+                
+                // Si estamos en horario restringido y el niño no está en la zona, ALARMA.
+                if(hayZonasActivas && !dentroDeAlguna) {
+                    playAlarm();
+                } else {
+                    stopAlarm();
+                    alarmaSilenciada = false; // Reset si volvió a entrar
+                }
+            }
+        }, () => {
+            document.getElementById('status-dot').className = 'punto-rojo';
+            document.getElementById('status-text').innerText = 'Error';
+        });
+
+        // --- 6. AUDIO API (ALARMA) ---
         let audioCtx;
         let alarmInterval;
         
-        function iniciarContextoAudio() {
-            if(!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        }
-
         function playAlarm() {
             if(alarmaSilenciada) return;
             document.getElementById('alert-overlay').style.display = 'flex';
-            
-            iniciarContextoAudio();
+            if(!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
             if(audioCtx.state === 'suspended') audioCtx.resume();
             if(alarmInterval) return; 
             
@@ -364,77 +488,24 @@
                 osc.frequency.exponentialRampToValueAtTime(440, audioCtx.currentTime + 0.3); 
                 gain.gain.setValueAtTime(1, audioCtx.currentTime);
                 gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
-                osc.connect(gain);
-                gain.connect(audioCtx.destination);
-                osc.start();
-                osc.stop(audioCtx.currentTime + 0.3);
+                osc.connect(gain); gain.connect(audioCtx.destination);
+                osc.start(); osc.stop(audioCtx.currentTime + 0.3);
             }, 500);
         }
 
         function stopAlarm() {
             document.getElementById('alert-overlay').style.display = 'none';
-            if(alarmInterval) {
-                clearInterval(alarmInterval);
-                alarmInterval = null;
-            }
+            if(alarmInterval) { clearInterval(alarmInterval); alarmInterval = null; }
         }
 
         function apagarAlarmaManual() {
             alarmaSilenciada = true;
             stopAlarm();
         }
+    </script>
+</body>
+</html>
 
-        // --- 5. FIREBASE Y RECEPCIÓN DE DATOS ---
-        const firebaseConfig = {
-            apiKey: "AIzaSyCFSI06EZP_Cb-FJIh-Z6NtG-qdGah_aPw",
-            authDomain: "gpsua-a8e4a.firebaseapp.com",
-            databaseURL: "https://gpsua-a8e4a-default-rtdb.firebaseio.com",
-            projectId: "gpsua-a8e4a",
-            storageBucket: "gpsua-a8e4a.firebasestorage.app",
-            messagingSenderId: "326653039016",
-            appId: "1:326653039016:web:dd889bafd686d1a0d10d9d"
-        };
-
-        try {
-            firebase.initializeApp(firebaseConfig);
-            const db = firebase.database();
-            const telemetriaRef = db.ref('telemetria');
-
-            telemetriaRef.on('value', (snapshot) => {
-                const data = snapshot.val();
-                if (data) {
-                    document.getElementById('val-lat').innerText = data.lat.toFixed(6);
-                    document.getElementById('val-lng').innerText = data.lng.toFixed(6);
-                    document.getElementById('val-sats').innerText = data.sats || "0";
-                    document.getElementById('val-bat').innerText = data.bat ? data.bat + "%" : "--%";
-
-                    const nuevaPosicion = new L.LatLng(data.lat, data.lng);
-                    marcador.setLatLng(nuevaPosicion);
-                    
-                    if(!modoDibujoActivo) {
-                        mapa.panTo(nuevaPosicion);
-                    }
-                    
-                    document.getElementById('status-dot').className = 'punto-verde';
-                    document.getElementById('status-text').innerText = 'En Línea';
-
-                    if (safeZonePolygon && polygonPoints.length >= 3) {
-                        const estaSeguro = estaDentroDelPoligono([data.lat, data.lng], polygonPoints);
-                        
-                        if (!estaSeguro) {
-                            playAlarm(); 
-                        } else {
-                            stopAlarm(); 
-                            alarmaSilenciada = false;
-                        }
-                    }
-                }
-            }, (error) => {
-                document.getElementById('status-dot').className = 'punto-rojo';
-                document.getElementById('status-text').innerText = 'Error';
-            });
-        } catch (e) {
-            console.error(e);
         }
     </script>
 </body>
