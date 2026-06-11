@@ -201,7 +201,8 @@
         </div>
 
         <div class="stat-card"><span class="icon">📍</span><span>Lat: <span class="value" id="val-lat">--</span> | Lng: <span class="value" id="val-lng">--</span></span></div>
-        <div class="stat-card"><span class="icon">🔋</span><span>Batería: <span class="value" style="color: #34d399;" id="val-bat">--%</span></span></div>
+        <div class="stat-card"><span class="icon">🔋</span><span>Niño: <span class="value" style="color: #34d399;" id="val-bat">--%</span></span></div>
+        <div class="stat-card"><span class="icon">📱</span><span>Papá: <span class="value" style="color: #60a5fa;" id="val-bat-rx">--%</span></span></div>
         
         <!-- Panel de Zonas Guardadas -->
         <div id="panel-zonas">
@@ -459,6 +460,7 @@
                 document.getElementById('val-lat').innerText = data.lat.toFixed(6);
                 document.getElementById('val-lng').innerText = data.lng.toFixed(6);
                 document.getElementById('val-bat').innerText = data.bat ? data.bat + "%" : "--%";
+                document.getElementById('val-bat-rx').innerText = data.batRx ? data.batRx + "%" : "--%";
 
                 const nuevaPosicion = new L.LatLng(data.lat, data.lng);
                 marcador.setLatLng(nuevaPosicion);
