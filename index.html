@@ -236,9 +236,21 @@
         mapa.on('click', function(e) {
             if(!modoDibujoActivo) return;
             
+            // Si hay al menos 3 puntos, verificar si tocó cerca del punto de inicio para CERRAR
+            if (polygonPoints.length >= 3) {
+                const puntoInicio = new L.LatLng(polygonPoints[0][0], polygonPoints[0][1]);
+                const distanciaMetros = mapa.distance(puntoInicio, e.latlng);
+                
+                // Si toca a menos de 40 metros del primer punto, se auto-cierra mágicamente
+                if (distanciaMetros < 40) {
+                    finalizarDibujo();
+                    return; // Termina aquí, no añade un punto extra
+                }
+            }
+            
             polygonPoints.push([e.latlng.lat, e.latlng.lng]);
             
-            // 1. Dibujar el punto rojo visual en la esquina (con opción de hacerle click para cerrar)
+            // 1. Dibujar el punto rojo visual en la esquina
             let vMarker = L.circleMarker(e.latlng, {
                 color: '#ef4444',
                 fillColor: '#ef4444',
@@ -246,16 +258,19 @@
                 radius: 6
             }).addTo(mapa);
             
-            // Si es el primer punto, le damos la propiedad de cerrar el cerco al tocarlo
+            // Si es el PRIMER punto, le damos propiedades especiales para que el usuario sepa que debe volver ahí
             if (polygonPoints.length === 1) {
-                vMarker.bindTooltip("Toca aquí para cerrar el cerco", {direction: 'top'});
-                vMarker.on('click', function() {
-                    if (polygonPoints.length >= 3) {
-                        finalizarDibujo();
-                    } else {
-                        alert("Marca al menos 3 puntos antes de cerrar.");
-                    }
-                });
+                vMarker.bindTooltip("Vuelve aquí para cerrar", {direction: 'top', permanent: true}).openTooltip();
+                
+                // Dibujar un halo de "magnetismo" de 40 metros para que sea fácil apuntarle
+                let haloMagnetico = L.circle(e.latlng, {
+                    color: '#f59e0b',
+                    fillColor: '#f59e0b',
+                    fillOpacity: 0.2,
+                    radius: 40,
+                    dashArray: '5, 5'
+                }).addTo(mapa);
+                vertexMarkers.push(haloMagnetico); // Se borrará solo al finalizar
             }
             
             vertexMarkers.push(vMarker);
