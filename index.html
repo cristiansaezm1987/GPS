@@ -450,7 +450,7 @@
                 document.getElementById('btn-ble').innerText = "Buscando Receptor...";
 
                 bluetoothDevice = await navigator.bluetooth.requestDevice({
-                    filters: [{ name: 'Antigravity_Receptor' }],
+                    acceptAllDevices: true,
                     optionalServices: [bleServiceUUID]
                 });
 
